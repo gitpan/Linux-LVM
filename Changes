@@ -4,3 +4,11 @@ Revision history for Perl extension Linux::LVM.
 	- original version; created by h2xs 1.22 with options
 		-X -n Linux::LVM
 
+0.11  Fri Apr  4 09:00:00 2003
+	- First ready for prime time release.
+
+0.12  Mon Apr  7 07:45:00 2003
+	- Added get_pv_info to fetch physical volume information by physical volume name.
+	- Added get_lv_info to fetch logical volume information by logical volume name.
+	- Made the get_vg_information routine public.
+	- Added some basic error checking.

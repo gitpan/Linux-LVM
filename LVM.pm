@@ -20,6 +20,9 @@ our %EXPORT_TAGS = ( 'all' => [ qw( get_volume_group_list
                                     get_volume_group_information
                                     get_logical_volume_information
                                     get_physical_volume_information
+                                    get_vg_information
+                                    get_pv_info
+                                    get_lv_info
 ) ] );
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
@@ -28,9 +31,12 @@ our @EXPORT = qw( get_volume_group_list
                   get_volume_group_information
                   get_logical_volume_information
                   get_physical_volume_information
+                  get_vg_information
+                  get_pv_info
+                  get_lv_info
 );
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 
 # Preloaded methods go here.
@@ -144,7 +150,10 @@ sub get_vg_information() {
     my $vgn;
     my $lvn;
     my $pvn;
+
+    if( ! -e "/sbin/vgdisplay" ) { die("LVM utilities not installed in /sbin"); }
     my @vginfo = `/sbin/vgdisplay -v`;
+
     VGINF: foreach(@vginfo) {
 
         # Parse the volume group name.
@@ -318,6 +327,176 @@ sub get_vg_information() {
 } # End of the get_vg_information routine.
 
 
+#-----------------------------------------------------------------------#
+# Subroutine: get_pv_info                                               #
+#-----------------------------------------------------------------------#
+# Description: This function will return a hash containing all of the   #
+#              information about the specified physical volume.         #
+#-----------------------------------------------------------------------#
+# Parameters: None                                                      #
+#-----------------------------------------------------------------------#
+# Return Values: On success, a hash with all of the pv information.     #
+#-----------------------------------------------------------------------#
+sub get_pv_info($) {
+    my $pvname = $_[0];
+    my %pvhash;
+
+    if( ! -e "$pvname" ) { die("Physical Disk: $pvname does not exist."); }
+    if( ! -e "/sbin/pvdisplay" ) { die("LVM utilities not installed in /sbin"); }
+    my @pvinfo = `/sbin/pvdisplay $pvname`;
+
+    PVINF: foreach(@pvinfo) {
+        # Get the name of the physical volume.
+        if( m/^PV Name(\s+)(\S+)/ ) {
+            $pvhash{pv_name} = $2;
+            next PVINF; }
+
+        # Get the name of the volume group the physical volume belongs to.
+        if( m/^VG Name(\s+)(\S+)/ ) {
+            $pvhash{vg_name} = $2;
+            next PVINF; }
+
+        # Get the size information of the physical volume.
+        if( m/^PV Size(\s+)(\S+) (\S+) \[(\S+) secs\] \/ (.+)/ ) {
+            $pvhash{size} = $2;
+            $pvhash{size_unit} = $3;
+            $pvhash{sectors} = $4;
+            $pvhash{size_info} = $5;
+            next PVINF; }
+
+        # Get the physical volume number.
+        if( m/^PV\#(\s+)(\S+)/ ) {
+            $pvhash{pv_number} = $2;
+            next PVINF; }
+
+        # Get the status of the physical volume.
+        if( m/^PV Status(\s+)(.+)/ ) {
+            $pvhash{status} = $2;
+            next PVINF; }
+
+        # Get the allocation status of the physical volume.
+        if( m/^Allocatable(\s+)(.+)/ ) {
+            $pvhash{allocatable} = $2;
+            next PVINF; }
+
+        # Get the number of logical volumes on the physical volume.
+        if( m/^Cur LV(\s+)(\S+)/ ) {
+            $pvhash{num_lvols} = $2;
+            next PVINF; }
+
+        # Get the physical extent size and unit of the physical volume.
+        if( m/^PE Size \((\S+)\)(\s+)(\S+)/ ) {
+            $pvhash{pe_size} = $3;
+            $pvhash{pe_size_unit} = $1;
+            next PVINF; }
+
+        # Get the total numver of physical extents on the physical volume.
+        if( m/^Total PE(\s+)(\S+)/ ) {
+            $pvhash{total_pe} = $2;
+            next PVINF; }
+
+        # Get the number of free extents on the physical volume.
+        if( m/^Free PE(\s+)(\S+)/ ) {
+            $pvhash{free_pe} = $2;
+            next PVINF; }
+
+        # Get the number of allocated physical extents on the physical volume.
+        if( m/^Allocated PE(\s+)(\S+)/ ) {
+            $pvhash{alloc_pe} = $2;
+            next PVINF; }
+
+        # Get the UUID of the physical volume.
+        if( m/^PV UUID(\s+)(\S+)/ ) {
+            $pvhash{uuid} = $2;
+            next PVINF; }
+    }
+    return %pvhash;
+} # End of the get_pv_info routine.
+
+
+#-----------------------------------------------------------------------#
+# Subroutine: get_lv_info                                               #
+#-----------------------------------------------------------------------#
+# Description: This function will return a hash containing all of the   #
+#              information about the specified logical volume.          #
+#-----------------------------------------------------------------------#
+# Parameters: None                                                      #
+#-----------------------------------------------------------------------#
+# Return Values: On success, a hash with all of the lv information.     #
+#-----------------------------------------------------------------------#
+sub get_lv_info($) {
+    my $lvname = $_[0];
+    my %lvhash;
+    if( ! -e "$lvname" ) { die("Logical Disk: $lvname does not exist."); }
+    if( ! -e "/sbin/lvdisplay" ) { die("LVM utilities not installed in /sbin"); }
+    my @lvinfo = `/sbin/lvdisplay $lvname`;
+
+    LVINF: foreach(@lvinfo) {
+
+        # Get the logical volume name.
+        if( m/^LV Name(\s+)(\S+)/ ) {
+            $lvhash{lv_name} = $2;
+            next LVINF; }
+
+        # Get the volume group name.
+        if( m/^VG Name(\s+)(\S+)/ ) {
+            $lvhash{vg_name} = $2;
+            next LVINF; }
+
+        # Get the logical volume write status.
+        if( m/^LV Write Access(\s+)(.+)/ ) {
+            $lvhash{access} = $2;
+            next LVINF; }
+
+        # Get the logical volume status.
+        if( m/^LV Status(\s+)(.+)/ ) {
+            $lvhash{status} = $2;
+            next LVINF; }
+
+        # Get the logical volume number.
+        if( m/^LV \#(\s+)(\S+)/ ) {
+            $lvhash{lv_number} = $2;
+            next LVINF; }
+
+        # Get the number of opens for the logical volume.
+        if( m/^\# open(\s+)(\S+)/ ) {
+            $lvhash{lv_open} = $2;
+            next LVINF; }
+
+        # Get the logical volume size and size unit.
+        if( m/^LV Size(\s+)(\S+) (\S+)/ )  {
+            $lvhash{size} = $2;
+            $lvhash{size_unit} = $3;
+            next LVINF; }
+
+        # Get the number of extents assigned to the logical volume.
+        if( m/^Current LE(\s+)(\S+)/ ) {
+            $lvhash{current_le} = $2;
+            next LVINF; }
+
+        # Get the number of extents allocated to the logical volume.
+        if( m/^Allocated LE(\s+)(\S+)/ )  {
+            $lvhash{alloc_le} = $2;
+            next LVINF; }
+
+        # Get the extent allocation type of the logical volume.
+        if( m/^Allocation(\s+)(.+)/ ) {
+            $lvhash{allocation} = $2;
+            next LVINF; }
+
+        # Get the number of read ahead sectors for the logical volume.
+        if( m/^Read ahead sectors(\s+)(\S+)/ ) {
+            $lvhash{read_ahead} = $2;
+            next LVINF; }
+
+        # Get the block device of the logical volume.
+        if( m/^Block device(\s+)(\S+)/ ) {
+            $lvhash{block_device} = $2;
+            next LVINF; }
+    }
+    return %lvhash;
+} # End of the get_lv_info routine.
+
 
 1;
 __END__
@@ -433,10 +612,9 @@ Linux::LVM - Perl extension for accessing LVM data structures.
   write_access = read/write
    
    
-  get_physical_volume_information("vg00")	This routine will return all
-						of the information about the
-						physical volumes assigned to
-						the specified volume group.
+  get_physical_volume_information($)	This routine will return all of the information
+					information about the physical volumes assigned 
+					to the specified volume group.
    
   %pv = get_physical_volume_information("vg00");
   foreach $pvname (sort keys %pv) {
@@ -457,10 +635,61 @@ Linux::LVM - Perl extension for accessing LVM data structures.
   pv_number = 2
   status = available / allocatable
   total_pe = 2544
-     
-     
-     
-     
+              
+              
+  get_lv_info($)	This routine will return all of the information about the
+			specified logical volume.  The information will be returned
+			in a hash.
+              
+  get_lv_info
+  %lv = get_lv_info("/dev/vg00/lvol1");
+  foreach (sort keys %lv) {
+      print "$_ = $lv{$_} \n";
+  }
+  Would yield the following results:
+  access = read/write 
+  alloc_le = 1024 
+  allocation = next free 
+  block_device = 58:0 
+  current_le = 1024 
+  lv_name = /dev/vg00/lvol1 
+  lv_number = 1 
+  lv_open = 0 
+  read_ahead = 1024 
+  size = 4 
+  size_unit = GB 
+  status = available 
+  vg_name = vg00 
+              
+              
+              
+  get_pv_info($)	This routine will return all of the information about the
+			specified physical volume.  The information will be returned
+			in a hash.
+              
+  %pv = get_pv_info("/dev/hda3");
+  foreach (sort keys %pv) {
+      print "$_ = $pv{$_} \n";
+  }
+  Would yield the following results:
+  alloc_pe = 2160 
+  allocatable = yes (but full) 
+  free_pe = 0 
+  num_lvols = 2 
+  pe_size = 4096 
+  pe_size_unit = KByte 
+  pv_name = /dev/hda3 
+  pv_number = 1 
+  sectors = 17703630 
+  size = 8.44 
+  size_info = NOT usable 4.19 MB [LVM: 136 KB] 
+  size_unit = GB 
+  status = available 
+  total_pe = 2160 
+  uuid = 2c5ADu-oEdt-ovCe-rqp0-MWpF-I5u1-8XigH4 
+  vg_name = vg00 
+              
+                   
      
   Command Output Used In The Above Examples: /sbin/vgdisplay -v
   --- Volume group ---
