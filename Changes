@@ -12,3 +12,9 @@ Revision history for Perl extension Linux::LVM.
 	- Added get_lv_info to fetch logical volume information by logical volume name.
 	- Made the get_vg_information routine public.
 	- Added some basic error checking.
+
+0.13  Mon Apr 10 07:45:00 2003
+	- Reworked some of the regule expressions.
+	- Improved the source documentation.
+	- Added some examples of how to use the module.
+
