@@ -30,7 +30,7 @@ our @EXPORT = qw( get_volume_group_list
                   get_physical_volume_information
 );
 
-our $VERSION = '0.01';
+our $VERSION = '0.11';
 
 
 # Preloaded methods go here.
