@@ -7,3 +7,4 @@ t/1.t
 examples/get_lv_info.pl
 examples/get_pv_info.pl
 examples/prt_vg_info.pl
+META.yml                                 Module meta-data (added by MakeMaker)

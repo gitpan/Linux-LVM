@@ -36,7 +36,7 @@ our @EXPORT = qw( get_volume_group_list
                   get_lv_info
 );
 
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 
 # Preloaded methods go here.
@@ -151,177 +151,196 @@ sub get_vg_information() {
     my $lvn;
     my $pvn;
 
-    if( ! -e "/sbin/vgdisplay" ) { die("LVM utilities not installed in /sbin"); }
-    my @vginfo = `/sbin/vgdisplay -v`;
+    if( ! -e "/usr/sbin/vgdisplay" ) { die("LVM utilities not installed in /sbin"); }
+    my @vginfo = `/usr/sbin/vgdisplay -v`;
 
     VGINF: foreach(@vginfo) {
+        chomp;
+        s/^\s+//g;
+        s/\s+$//g;
+        next VGINF if m/^$/;
 
         # Parse the volume group name.
-        if( m/^VG Name\s+(\S+)/ ) { 
+        if( m/VG Name\s+(\S+)/ ) { 
             $vgn = $1; $vghash{$vgn}->{vgname} = $1; 
             next VGINF; }
 
         # Parse the volume group access.
-        elsif( m/^VG Access\s+(\S+)/ ) { 
+        elsif( m/VG Access\s+(\S+)/ ) { 
             $vghash{$vgn}->{access} = $1; 
             next VGINF; }
 
         # Parse the volume group status.
-        elsif( m/^VG Status\s+(.+)/ ) { 
+        elsif( m/VG Status\s+(.+)/ ) { 
             $vghash{$vgn}->{status} = $1; 
             next VGINF; }
 
         # Parse the volume group number.
-        elsif( m/^VG #\s+(\S+)/ ) { 
+        elsif( m/VG #\s+(\S+)/ ) { 
             $vghash{$vgn}->{vg_number} = $1; 
             next VGINF; }
 
         # Parse the maximum logical volume size and size unit for the volume group.
-        elsif( m/^MAX LV Size\s+(\S+) (\S+)/ ) {
+        elsif( m/MAX LV Size\s+(\S+) (\S+)/ ) {
             $vghash{$vgn}->{max_lv_size} = $1;
             $vghash{$vgn}->{max_lv_size_unit} = $2; 
             next VGINF; }
 
         # Parse the maximum number of logical volumes for the volume group.
-        elsif( m/^MAX LV\s+(\S+)/ ) { 
+        elsif( m/MAX LV\s+(\S+)/ ) { 
             $vghash{$vgn}->{max_lv} = $1; 
             next VGINF; }
 
         # Parse the current number of logical volumes for the volume group.
-        elsif( m/^Cur LV\s+(\S+)/ ) { 
+        elsif( m/Cur LV\s+(\S+)/ ) { 
             $vghash{$vgn}->{cur_lv} = $1; 
             next VGINF; }
 
         # Parse the number of open logical volumes for the volume group.
-        elsif( m/^Open LV\s+(\S+)/ )   { 
+        elsif( m/Open LV\s+(\S+)/ )   { 
             $vghash{$vgn}->{open_lv} = $1; 
             next VGINF; }
 
         # Parse the number of physical volumes accessible to the volume group.
-        elsif( m/^Max PV\s+(\S+)/ ) { 
+        elsif( m/Max PV\s+(\S+)/ ) { 
             $vghash{$vgn}->{max_pv} = $1; 
             next VGINF; }
 
         # Parse the current number of physical volumes in the volume group.
-        elsif( m/^Cur PV\s+(\S+)/ ) { 
+        elsif( m/Cur PV\s+(\S+)/ ) { 
             $vghash{$vgn}->{cur_pv} = $1; 
             next VGINF; }
 
         # Parse the number of active physical volumes in the volume group.
-        elsif( m/^Act PV\s+(\S+)/ ) { 
+        elsif( m/Act PV\s+(\S+)/ ) { 
             $vghash{$vgn}->{act_pv} = $1; 
             next VGINF; }
 
         # Parse the size of the volume group.
-        elsif( m/^VG Size\s+(\S+) (\S+)/ ) {
+        elsif( m/VG Size\s+(\S+) (\S+)/ ) {
             $vghash{$vgn}->{vg_size} = $1;
             $vghash{$vgn}->{vg_size_unit} = $2; 
             next VGINF; }
 
         # Parse the physical extent size and unit for one extent of volume group.
-        elsif( m/^PE Size\s+(\S+) (\S+)/ ) {
+        elsif( m/PE Size\s+(\S+) (\S+)/ ) {
             $vghash{$vgn}->{pe_size} = $1;
             $vghash{$vgn}->{pe_size_unit} = $2; 
             next VGINF; }
 
         # Parse the total number and number of free physical extents from the physical disk.
-        elsif( m/^Total PE \/ Free PE\s+(\S+) \/ (\S+)/m ) {
+        elsif( m/Total PE \/ Free PE\s+(\S+) \/ (\S+)/m ) {
             $vghash{$vgn}->{pvols}->{$pvn}->{total_pe} = $1;
             $vghash{$vgn}->{pvols}->{$pvn}->{free_pe} = $2;
             next VGINF; }
 
         # Parse the total number of physical extents from the volume group.
-        elsif( m/^Total PE\s+(\S+)/ ) { 
+        elsif( m/Total PE\s+(\S+)/ ) { 
             $vghash{$vgn}->{total_pe} = $1; 
             next VGINF; }
 
         # Parse the number of allocated physical extents from the volume group.
-        elsif( m/^Alloc PE \/ Size\s+(\S+) \/ (\S+) (\S+)/ ) {
+        elsif( m/Alloc PE \/ Size\s+(\S+) \/ (\S+) (\S+)/ ) {
             $vghash{$vgn}->{alloc_pe} = $1;
             $vghash{$vgn}->{alloc_pe_size} = $2;
             $vghash{$vgn}->{alloc_pe_size_unit} = $3; 
             next VGINF; }
 
         # Parse the volume group name.
-        elsif( m/^Free  PE \/ Size\s+(\S+) \/ (\S+) (\S+)/ ) {
+        elsif( m/Free  PE \/ Size\s+(\S+) \/ (\S+) (\S+)/ ) {
             $vghash{$vgn}->{free_pe} = $1;
             $vghash{$vgn}->{free_pe_size} = $2;
             $vghash{$vgn}->{free_pe_size_unit} = $3; 
             next VGINF; }
 
         # Parse the volume group uuid.
-        elsif( m/^VG UUID\s+(\S+)/ ) { 
+        elsif( m/VG UUID\s+(\S+)/ ) { 
             $vghash{$vgn}->{uuid} = $1; 
             next VGINF; }
 
         # Parse the logical volume name.
-        elsif( m/^LV Name\s+(\S+)/ ) { 
+        elsif( m/LV Name\s+(\S+)/ ) { 
             $lvn = $1; 
             $vghash{$vgn}->{lvols}->{$lvn}->{name} = $1; 
             next VGINF; }
 
+        # Parse the logical volume UUID.
+        elsif( m/LV UUID\s+(\S+)/ ) { 
+            $vghash{$vgn}->{lvols}->{$lvn}->{uuid} = $1; 
+            next VGINF; }
+
+        # Parse the logical volume UUID.
+        elsif( m/Segments\s+(\S+)/ ) { 
+            $vghash{$vgn}->{lvols}->{$lvn}->{segments} = $1; 
+            next VGINF; }
+
         # Parse the logical volume size and unit.
-        elsif( m/^LV Size\s+(\S+) (\S+)/ ) {
+        elsif( m/LV Size\s+(\S+) (\S+)/ ) {
             $vghash{$vgn}->{lvols}->{$lvn}->{lv_size} = $1;
             $vghash{$vgn}->{lvols}->{$lvn}->{lv_size_unit} = $2; 
             next VGINF; }
 
         # Parse the logical volume write access.
-        elsif( m/^LV Write Access\s+(\S+)/ ) { 
+        elsif( m/LV Write Access\s+(\S+)/ ) { 
             $vghash{$vgn}->{lvols}->{$lvn}->{write_access} = $1; 
             next VGINF; }
 
         # Parse the logical volume status.
-        elsif( m/^LV Status\s+(.+)/ ) { 
+        elsif( m/LV Status\s+(.+)/ ) { 
             $vghash{$vgn}->{lvols}->{$lvn}->{status} = $1; 
             next VGINF; }
 
         # Parse the number of logical extents in the logical volume.
-        elsif( m/^Current LE\s+(\S+)/ ) { 
+        elsif( m/Current LE\s+(\S+)/ ) { 
             $vghash{$vgn}->{lvols}->{$lvn}->{cur_le} = $1; 
             next VGINF; }
 
         # Parse the number of allocated logical extents in the logical volume.
-        elsif( m/^Allocated LE\s+(\S+)/ ) { 
+        elsif( m/Allocated LE\s+(\S+)/ ) { 
             $vghash{$vgn}->{lvols}->{$lvn}->{alloc_le} = $1; 
             next VGINF; }
 
         # Parse the allocation type for the logical volume.
-        elsif( m/^Allocation\s+(.+)/ ) { 
+        elsif( m/Allocation\s+(.+)/ ) { 
             $vghash{$vgn}->{lvols}->{$lvn}->{allocation} = $1; 
             next VGINF; }
 
         # Parse the volume number.
-        elsif( m/^LV #\s+(\S+)/ ) { 
+        elsif( m/LV #\s+(\S+)/ ) { 
             $vghash{$vgn}->{lvols}->{$lvn}->{lv_number} = $1; 
             next VGINF; }
 
         # Parse the number of times the logical volume is open.
-        elsif( m/^# open\s+(\S+)/ ) { 
+        elsif( m/# open\s+(\S+)/ ) { 
             $vghash{$vgn}->{lvols}->{$lvn}->{open_lv} = $1; 
             next VGINF; }
 
         # Parse the block device of the logical volume.
-        elsif( m/^Block device\s+(\S+)/ ) { 
+        elsif( m/Block device\s+(\S+)/ ) { 
             $vghash{$vgn}->{lvols}->{$lvn}->{device} = $1; 
             next VGINF; }
 
         # Parse the value for the read ahead sectors of the logical volume.
-        elsif( m/^Read ahead sectors\s+(\S+)/ ) { 
+        elsif( m/Read ahead sectors\s+(\S+)/ ) { 
             $vghash{$vgn}->{lvols}->{$lvn}->{read_ahead} = $1; 
             next VGINF; }
 
         # Parse the physical disk name.
-        elsif( m/^PV Name \(\#\)\s+(\S+) \((\S)\)/ ) {
-            $pvn = $2;
+        elsif( m/PV Name\s+(\S+)/ ) {
+            $pvn = $1;
             $vghash{$vgn}->{pvols}->{$pvn}->{device} = $1;
-            $vghash{$vgn}->{pvols}->{$pvn}->{pv_number} = $2;
             next VGINF; }
 
         # Parse the status of the physical disk.
-        elsif( m/^PV Status\s+(.+)/ ) { 
+        elsif( m/PV Status\s+(.+)/ ) { 
             $vghash{$vgn}->{pvols}->{$pvn}->{status} = $1; 
             next VGINF; }
+
+        # Parse the status of the physical disk.
+        elsif( m/PV UUID\s+(.+)/ ) { 
+            $vghash{$vgn}->{pvols}->{$pvn}->{uuid} = $1; 
+            next VGINF; }
+
     }
     return %vghash;
 } # End of the get_vg_information routine.
@@ -342,71 +361,69 @@ sub get_pv_info($) {
     my %pvhash;
 
     if( ! -e "$pvname" ) { die("Physical Disk: $pvname does not exist."); }
-    if( ! -e "/sbin/pvdisplay" ) { die("LVM utilities not installed in /sbin"); }
-    my @pvinfo = `/sbin/pvdisplay $pvname`;
+    if( ! -e "/usr/sbin/pvdisplay" ) { die("LVM utilities not installed in /sbin"); }
+    my @pvinfo = `/usr/sbin/pvdisplay $pvname`;
 
     PVINF: foreach(@pvinfo) {
         # Get the name of the physical volume.
-        if( m/^PV Name\s+(\S+)/ ) {
+        if( m/PV Name\s+(\S+)/ ) {
             $pvhash{pv_name} = $1;
             next PVINF; }
 
         # Get the name of the volume group the physical volume belongs to.
-        if( m/^VG Name\s+(\S+)/ ) {
+        if( m/VG Name\s+(\S+)/ ) {
             $pvhash{vg_name} = $1;
             next PVINF; }
 
         # Get the size information of the physical volume.
-        if( m/^PV Size\s+(\S+) (\S+) \[(\S+) secs\] \/ (.+)/ ) {
+        if( m/PV Size\s+(\S+) (\S+)/ ) {
             $pvhash{size} = $1;
             $pvhash{size_unit} = $2;
-            $pvhash{sectors} = $3;
-            $pvhash{size_info} = $4;
             next PVINF; }
 
         # Get the physical volume number.
-        if( m/^PV\#\s+(\S+)/ ) {
+        if( m/PV\#\s+(\S+)/ ) {
             $pvhash{pv_number} = $1;
             next PVINF; }
 
         # Get the status of the physical volume.
-        if( m/^PV Status\s+(.+)/ ) {
+        if( m/PV Status\s+(.+)/ ) {
             $pvhash{status} = $1;
             next PVINF; }
 
         # Get the allocation status of the physical volume.
-        if( m/^Allocatable\s+(.+)/ ) {
+        if( m/Allocatable\s+(.+)/ ) {
             $pvhash{allocatable} = $1;
             next PVINF; }
 
         # Get the number of logical volumes on the physical volume.
-        if( m/^Cur LV\s+(\S+)/ ) {
+        if( m/Cur LV\s+(\S+)/ ) {
             $pvhash{num_lvols} = $1;
             next PVINF; }
 
         # Get the physical extent size and unit of the physical volume.
-        if( m/^PE Size \((\S+)\)\s+(\S+)/ ) {
+        if( m/PE Size \((\S+)\)\s+(\S+)/ ) {
             $pvhash{pe_size} = $2;
             $pvhash{pe_size_unit} = $1;
             next PVINF; }
 
         # Get the total numver of physical extents on the physical volume.
-        if( m/^Total PE\s+(\S+)/ ) {
+        if( m/Total PE\s+(\S+)/ ) {
             $pvhash{total_pe} = $1;
             next PVINF; }
 
         # Get the number of free extents on the physical volume.
-        if( m/^Free PE\s+(\S+)/ ) {
+        if( m/Free PE\s+(\S+)/ ) {
             $pvhash{free_pe} = $1;
             next PVINF; }
 
         # Get the number of allocated physical extents on the physical volume.
-        if( m/^Allocated PE\s+(\S+)/ ) {
+        if( m/Allocated PE\s+(\S+)/ ) {
             $pvhash{alloc_pe} = $1;
             next PVINF; }
 
         # Get the UUID of the physical volume.
-        if( m/^PV UUID\s+(\S+)/ ) {
+        if( m/PV UUID\s+(\S+)/ ) {
             $pvhash{uuid} = $1;
             next PVINF; }
     }
@@ -428,69 +445,74 @@ sub get_lv_info($) {
     my $lvname = $_[0];
     my %lvhash;
     if( ! -e "$lvname" ) { die("Logical Disk: $lvname does not exist."); }
-    if( ! -e "/sbin/lvdisplay" ) { die("LVM utilities not installed in /sbin"); }
-    my @lvinfo = `/sbin/lvdisplay $lvname`;
+    if( ! -e "/usr/sbin/lvdisplay" ) { die("LVM utilities not installed in /sbin"); }
+    my @lvinfo = `/usr/sbin/lvdisplay $lvname`;
 
     LVINF: foreach(@lvinfo) {
 
         # Get the logical volume name.
-        if( m/^LV Name\s+(\S+)/ ) {
+        if( m/LV Name\s+(\S+)/ ) {
             $lvhash{lv_name} = $1;
             next LVINF; }
 
         # Get the volume group name.
-        if( m/^VG Name\s+(\S+)/ ) {
+        if( m/VG Name\s+(\S+)/ ) {
             $lvhash{vg_name} = $1;
             next LVINF; }
 
+        # Get the volume group name.
+        if( m/LV UUID\s+(\S+)/ ) {
+            $lvhash{uuid} = $1;
+            next LVINF; }
+
         # Get the logical volume write status.
-        if( m/^LV Write Access\s+(.+)/ ) {
+        if( m/LV Write Access\s+(.+)/ ) {
             $lvhash{access} = $1;
             next LVINF; }
 
         # Get the logical volume status.
-        if( m/^LV Status\s+(.+)/ ) {
+        if( m/LV Status\s+(.+)/ ) {
             $lvhash{status} = $1;
             next LVINF; }
 
         # Get the logical volume number.
-        if( m/^LV \#\s+(\S+)/ ) {
+        if( m/LV \#\s+(\S+)/ ) {
             $lvhash{lv_number} = $1;
             next LVINF; }
 
         # Get the number of opens for the logical volume.
-        if( m/^\# open\s+(\S+)/ ) {
+        if( m/\# open\s+(\S+)/ ) {
             $lvhash{lv_open} = $1;
             next LVINF; }
 
         # Get the logical volume size and size unit.
-        if( m/^LV Size\s+(\S+) (\S+)/ )  {
+        if( m/LV Size\s+(\S+) (\S+)/ )  {
             $lvhash{size} = $1;
             $lvhash{size_unit} = $2;
             next LVINF; }
 
         # Get the number of extents assigned to the logical volume.
-        if( m/^Current LE\s+(\S+)/ ) {
+        if( m/Current LE\s+(\S+)/ ) {
             $lvhash{current_le} = $1;
             next LVINF; }
 
         # Get the number of extents allocated to the logical volume.
-        if( m/^Allocated LE\s+(\S+)/ )  {
+        if( m/Allocated LE\s+(\S+)/ )  {
             $lvhash{alloc_le} = $1;
             next LVINF; }
 
         # Get the extent allocation type of the logical volume.
-        if( m/^Allocation\s+(.+)/ ) {
+        if( m/Allocation\s+(.+)/ ) {
             $lvhash{allocation} = $1;
             next LVINF; }
 
         # Get the number of read ahead sectors for the logical volume.
-        if( m/^Read ahead sectors\s+(\S+)/ ) {
+        if( m/Read ahead sectors\s+(\S+)/ ) {
             $lvhash{read_ahead} = $1;
             next LVINF; }
 
         # Get the block device of the logical volume.
-        if( m/^Block device\s+(\S+)/ ) {
+        if( m/Block device\s+(\S+)/ ) {
             $lvhash{block_device} = $1;
             next LVINF; }
     }

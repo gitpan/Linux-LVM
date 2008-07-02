@@ -14,7 +14,11 @@ Revision history for Perl extension Linux::LVM.
 	- Added some basic error checking.
 
 0.13  Mon Apr 10 07:45:00 2003
-	- Reworked some of the regule expressions.
+	- Reworked some of the regular expressions.
 	- Improved the source documentation.
 	- Added some examples of how to use the module.
+
+0.14  Wed Jul  2 02:54:14 CDT 2008
+        - Fixed some logic errors to get it working a little better
+        - Full rewrite underway
 
