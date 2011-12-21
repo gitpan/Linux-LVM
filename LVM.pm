@@ -36,7 +36,7 @@ our @EXPORT = qw( get_volume_group_list
                   get_lv_info
 );
 
-our $VERSION = '0.14';
+our $VERSION = '0.15.01';
 
 
 # Preloaded methods go here.

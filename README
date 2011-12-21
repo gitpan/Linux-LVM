@@ -23,7 +23,7 @@ This module has no other dependencies.
 COPYRIGHT AND LICENCE
 
 Copyright (C) 2008 Chad Kerner
-0.15 modifications by Ray Morris
+0.15.01 modifications by Ray Morris
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself. 
