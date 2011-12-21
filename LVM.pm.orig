@@ -151,14 +151,8 @@ sub get_vg_information() {
     my $lvn;
     my $pvn;
 
-    my @vginfo;
-
-    if ( -e "/usr/sbin/vgdisplay" ) {
-        @vginfo = `/usr/sbin/vgdisplay -v`;
-    } else {
-        if( ! -e "/sbin/vgdisplay" ) { die("LVM utilities not installed in /sbin or /usr/sbin"); }
-        @vginfo = `/sbin/vgdisplay -v`;
-    }
+    if( ! -e "/usr/sbin/vgdisplay" ) { die("LVM utilities not installed in /sbin"); }
+    my @vginfo = `/usr/sbin/vgdisplay -v`;
 
     VGINF: foreach(@vginfo) {
         chomp;
@@ -341,10 +335,6 @@ sub get_vg_information() {
             $vghash{$vgn}->{lvols}->{$lvn}->{'cow_table_unit'} = $2;
             next VGINF; }
 
-        elsif( m/Mirrored volumes\s+(.+)/ ) {
-                $vghash{$vgn}->{lvols}->{$lvn}->{'mirrored_volumes'} = $1;
-                next VGINF; }
-
         # Parse the physical disk name.
         elsif( m/PV Name\s+(\S+)/ ) {
             $pvn = $1;
@@ -379,17 +369,10 @@ sub get_vg_information() {
 sub get_pv_info($) {
     my $pvname = $_[0];
     my %pvhash;
-    my @pvinfo;
 
     if( ! -e "$pvname" ) { die("Physical Disk: $pvname does not exist."); }
-
-    if ( -e "/usr/sbin/pvdisplay" ) {
-        @pvinfo = `/usr/sbin/pvdisplay $pvname`;
-    } else {
-        if( ! -e "/sbin/pvdisplay" ) { die("LVM utilities not installed in /sbin or /usr/sbin"); }
-        @pvinfo = `/sbin/pvdisplay $pvname`;
-    }
-
+    if( ! -e "/usr/sbin/pvdisplay" ) { die("LVM utilities not installed in /sbin"); }
+    my @pvinfo = `/usr/sbin/pvdisplay $pvname`;
 
     PVINF: foreach(@pvinfo) {
         # Get the name of the physical volume.
@@ -471,16 +454,9 @@ sub get_pv_info($) {
 sub get_lv_info($) {
     my $lvname = $_[0];
     my %lvhash;
-    my @lvinfo;
-
     if( ! -e "$lvname" ) { die("Logical Disk: $lvname does not exist."); }
-
-    if ( -e "/usr/sbin/vgdisplay" ) {
-        @lvinfo = `/usr/sbin/lvdisplay $lvname`;
-    } else {
-        if( ! -e "/sbin/vgdisplay" ) { die("LVM utilities not installed in /sbin or /usr/sbin"); }
-        @lvinfo = `/sbin/lvdisplay $lvname`;
-    }
+    if( ! -e "/usr/sbin/lvdisplay" ) { die("LVM utilities not installed in /sbin"); }
+    my @lvinfo = `/usr/sbin/lvdisplay $lvname`;
 
     LVINF: foreach(@lvinfo) {
 

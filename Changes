@@ -22,3 +22,8 @@ Revision history for Perl extension Linux::LVM.
         - Fixed some logic errors to get it working a little better
         - Full rewrite underway
 
+0.15  Wed Dec 21 09:01:00 CDT 2011
+        - Look in both /sbin and /usr/sin for lvm binaries
+        - Report snapshot allocated_to_snapshot, cow_table_size and cow_table_unit
+        - Report mirrored_volumes
+
