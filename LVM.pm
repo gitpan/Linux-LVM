@@ -36,12 +36,34 @@ our @EXPORT = qw( get_volume_group_list
                   get_lv_info
 );
 
-our $VERSION = '0.15.01';
-
+our $VERSION = '0.16';
+our $units;
 
 # Preloaded methods go here.
 
 # Autoload methods go after =cut, and are processed by the autosplit program.
+
+#-----------------------------------------------------------------------#
+# Subroutine: units                                                     #
+#-----------------------------------------------------------------------#
+# Description: Set units to be used for pe_size, lv_size, etc.          #
+#              legal values are same as lvm --units:                    #
+#              hbskmgtpeHBSKMGTPE                                       #
+#              (h)uman-readable, (b)ytes, (s)ectors, (k)ilobytes,       # 
+#              (m)egabytes, (g)igabytes, (t)erabytes, (p)etabytes,      #
+#              (e)xabytes.  Capitalise to use multiples of 1000 (S.I.)  #
+#              instead of 1024.                                         #
+#              Can also specify custom units e.g. --units 3M            #
+#-----------------------------------------------------------------------#
+# Parameters: None                                                      #
+#-----------------------------------------------------------------------#
+# Return Values: On success, a array with the volume group names.       #
+#-----------------------------------------------------------------------#
+sub units {
+    shift;
+    $units     = shift() if @_;
+    return $units;
+}
 
 #-----------------------------------------------------------------------#
 # Subroutine: get_volume_group_list                                     #
@@ -67,7 +89,7 @@ sub get_volume_group_list() {
 #-----------------------------------------------------------------------#
 # Parameters: A string containing a volume group name.                  #
 #-----------------------------------------------------------------------#
-# Return Values: On success, a hast with the volume group data.         #
+# Return Values: On success, a hash with the volume group data.         #
 #-----------------------------------------------------------------------#
 sub get_volume_group_information($) {
     my $volume_group = $_[0];
@@ -93,7 +115,7 @@ sub get_volume_group_information($) {
 #-----------------------------------------------------------------------#
 # Parameters: A string containing a volume group name.                  #
 #-----------------------------------------------------------------------#
-# Return Values: On success, a hast with the volume group data.         #
+# Return Values: On success, a hash with the volume group data.         #
 #-----------------------------------------------------------------------#
 sub get_logical_volume_information($) {
     my $volume_group = $_[0];
@@ -118,7 +140,7 @@ sub get_logical_volume_information($) {
 #-----------------------------------------------------------------------#
 # Parameters: A string containing a volume group name.                  #
 #-----------------------------------------------------------------------#
-# Return Values: On success, a hast with the volume group data.         #
+# Return Values: On success, a hash with the volume group data.         #
 #-----------------------------------------------------------------------#
 sub get_physical_volume_information($) {
     my $volume_group = $_[0];
@@ -152,12 +174,14 @@ sub get_vg_information() {
     my $pvn;
 
     my @vginfo;
-
+    
+    my $units_arg = '';
+    $units_arg = " --units $units " if ($units);
     if ( -e "/usr/sbin/vgdisplay" ) {
-        @vginfo = `/usr/sbin/vgdisplay -v`;
+        @vginfo = `/usr/sbin/vgdisplay -v $units_arg`;
     } else {
         if( ! -e "/sbin/vgdisplay" ) { die("LVM utilities not installed in /sbin or /usr/sbin"); }
-        @vginfo = `/sbin/vgdisplay -v`;
+        @vginfo = `/sbin/vgdisplay -v $units_arg`;
     }
 
     VGINF: foreach(@vginfo) {
@@ -383,11 +407,14 @@ sub get_pv_info($) {
 
     if( ! -e "$pvname" ) { die("Physical Disk: $pvname does not exist."); }
 
+    my $units_arg = '';
+    $units_arg = " --units $units " if ($units);
+
     if ( -e "/usr/sbin/pvdisplay" ) {
-        @pvinfo = `/usr/sbin/pvdisplay $pvname`;
+        @pvinfo = `/usr/sbin/pvdisplay $units_arg $pvname`;
     } else {
         if( ! -e "/sbin/pvdisplay" ) { die("LVM utilities not installed in /sbin or /usr/sbin"); }
-        @pvinfo = `/sbin/pvdisplay $pvname`;
+        @pvinfo = `/sbin/pvdisplay $units_arg $pvname`;
     }
 
 
@@ -475,11 +502,13 @@ sub get_lv_info($) {
 
     if( ! -e "$lvname" ) { die("Logical Disk: $lvname does not exist."); }
 
+    my $units_arg = '';
+    $units_arg = " --units $units " if ($units);
     if ( -e "/usr/sbin/vgdisplay" ) {
-        @lvinfo = `/usr/sbin/lvdisplay $lvname`;
+        @lvinfo = `/usr/sbin/lvdisplay $units_arg $lvname`;
     } else {
         if( ! -e "/sbin/vgdisplay" ) { die("LVM utilities not installed in /sbin or /usr/sbin"); }
-        @lvinfo = `/sbin/lvdisplay $lvname`;
+        @lvinfo = `/sbin/lvdisplay $units_arg $lvname`;
     }
 
     LVINF: foreach(@lvinfo) {
@@ -575,7 +604,7 @@ Linux::LVM - Perl extension for accessing Logical Volume Manager(LVM)
 =head1 SYNOPSIS
 
   use Linux::LVM;
-  
+  Linux::LVM->units('G'); 
 
 =head1 ABSTRACT
 
@@ -583,7 +612,11 @@ Linux::LVM - Perl extension for accessing Logical Volume Manager(LVM)
   for your convenience and reference.
   
 =head1 DESCRIPTION
-  
+ 
+  units()  Get or set the units used to report sizes of LVs, PVs, etc.
+           legal values: hbskmgtpeHBSKMGTPE
+           see man lvm documentation of --units
+ 
   get_volume_group_list()	This routine will return an array that
 				contains the names of the volume groups.
 

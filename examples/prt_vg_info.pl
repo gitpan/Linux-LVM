@@ -1,6 +1,7 @@
-
+#!/usr/bin/perl
 use Linux::LVM;
-
+Linux::LVM->units('G');
+# Date: 2012-02-08
 %vg = get_volume_group_information("vg00");
 
 print "--- Volume group --- \n";

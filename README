@@ -1,4 +1,4 @@
-Linux/LVM version 0.15
+Linux/LVM version 0.16
 ======================
 
 This module was written so that I could create my own disk allocation
@@ -23,7 +23,7 @@ This module has no other dependencies.
 COPYRIGHT AND LICENCE
 
 Copyright (C) 2008 Chad Kerner
-0.15.01 modifications by Ray Morris
+0.15.01 and 0.16 modifications by Ray Morris
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself. 

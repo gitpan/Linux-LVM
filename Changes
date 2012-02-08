@@ -27,3 +27,6 @@ Revision history for Perl extension Linux::LVM.
         - Report snapshot allocated_to_snapshot, cow_table_size and cow_table_unit
         - Report mirrored_volumes
 
+0.16  Web Feb  8 13:50:00 CDT 2012
+        - added units() sub to set units used for pe_size, lv_size, etc
+
