@@ -36,7 +36,7 @@ our @EXPORT = qw( get_volume_group_list
                   get_lv_info
 );
 
-our $VERSION = '0.16';
+our $VERSION = '0.17';
 our $units;
 
 # Preloaded methods go here.
@@ -294,6 +294,12 @@ sub get_vg_information() {
             $vghash{$vgn}->{lvols}->{$lvn}->{name} = $1; 
             next VGINF; }
 
+        # since version 2.02.89 'LV Name' is no longer the full path, 'LV Path' is.
+        # LV Path may be bogus or missing in some cases, such as thin pools.
+        if( m/LV Path\s+(\S+)/ ) {
+            $vghash{$vgn}->{lvols}->{$lvn}->{name} = $1;
+            next LVINF; }
+
         # Parse the logical volume UUID.
         elsif( m/LV UUID\s+(\S+)/ ) { 
             $vghash{$vgn}->{lvols}->{$lvn}->{uuid} = $1; 
@@ -515,6 +521,13 @@ sub get_lv_info($) {
 
         # Get the logical volume name.
         if( m/LV Name\s+(\S+)/ ) {
+            $lvhash{lv_name} = $1;
+            next LVINF; }
+
+
+        # since version 2.02.89 'LV Name' is no longer the full path, 'LV Path' is.
+        # LV Path may be bogus or missing in some cases, such as thin pools.
+        if( m/LV Path\s+(\S+)/ ) {
             $lvhash{lv_name} = $1;
             next LVINF; }
 

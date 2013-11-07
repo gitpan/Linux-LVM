@@ -30,3 +30,6 @@ Revision history for Perl extension Linux::LVM.
 0.16  Web Feb  8 13:50:00 CDT 2012
         - added units() sub to set units used for pe_size, lv_size, etc
 
+0.17  Web Nov  6 19:24:00 CDT 2013
+        - Compatiblity with LVM2 2.02.89 and above displaying path as "LV Path" rather than "LV Name"
+
